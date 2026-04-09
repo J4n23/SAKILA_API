@@ -21,7 +21,7 @@ def list_films():
 
 
 @app.get("/films/{film_id}")
-def view_film(film_id: int = Path (description="Details of 1 film", example="3")):
+def view_film(film_id: int = Path (description="Details of 1 film", examples="3")):
     mycursor.execute("SELECT film_id, title, description, release_year FROM film WHERE film_id = %s;", (film_id,))
     result = mycursor.fetchone()
     return result
