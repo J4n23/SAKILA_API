@@ -52,7 +52,19 @@ def view_actors(first_name: str, last_name: str):
     result_dictionary["films"] = film_query
     result_dictionary["actor"] = actor_query
     return result_dictionary
-## WHAT IF THERE WILL BE TWO IDENTICALLY NAMED ACTORS??
+
+@app.get("/inventory/{film_id}")
+def view_availability(film_id: int):
+    mycursor.execute("SELECT COUNT(result.inventory_id) AS AVAILABLE "
+                    "FROM ( "
+                        "SELECT DISTINCT rnt.inventory_id, inv.film_id "
+                        "FROM inventory inv "
+                        "JOIN rental rnt ON inv.inventory_id = rnt.inventory_id " 
+                        "WHERE inv.film_id = %s "
+                        "AND rnt.inventory_id NOT IN (SELECT inventory_id from rental where return_date is NULL) "
+	                ") AS result; ", (film_id, ))
+    availability = mycursor.fetchone()
+    return availability
 
 
 ## DEMO OBJECT WITH NO PURPOSE
