@@ -22,18 +22,27 @@ def list_films():
 
 @app.get("/films/{film_id}")
 def view_film(film_id: int = Path (description="Details of 1 film")):
+    resultDIctionary = dict()
     mycursor.execute("SELECT film_id, title, description, release_year FROM film WHERE film_id = %s;", (film_id,))
-    result = mycursor.fetchone()
-    return result
+    querry1 = mycursor.fetchone()
+    mycursor.execute("SELECT ac.actor_id, CONCAT ( ac.first_name,' ', ac.last_name) AS actor_name " 
+                    "from film flm "
+                    "join film_actor fac on flm.film_id = fac.film_id "
+                    "join actor ac on fac.actor_id = ac.actor_id " 
+                    "where flm.film_id = %s;", (film_id,))
+    querry2 = mycursor.fetchall()
+    resultDIctionary = querry1
+    resultDIctionary["actors"] = querry2
+    return resultDIctionary
 
 
 @app.get("/actors/{film_title}")
 def view_actors(film_title: str):
-    mycursor.execute("SELECT ac.first_name, ac.last_name " 
+    mycursor.execute("SELECT flm.film_id, flm.title, flm.description, flm.release_year, ac.first_name, ac.last_name " 
                     "from film flm "
                     "join film_actor fac on flm.film_id = fac.film_id "
                     "join actor ac on fac.actor_id = ac.actor_id " 
-                    "where flm.title = %s;", (film_title,))
+                    "where flm.film_id = %s;", (film_id,))
     result = mycursor.fetchall()
     return result
 
