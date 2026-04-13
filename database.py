@@ -9,11 +9,14 @@ with open("credentials.txt") as f:
       creds = x.split(': ')
       credObj[creds[0]] = creds[1]
 
-mydb = mysql.connector.connect(
-  host="127.0.0.1",
-  user = credObj["user"],
-  password = credObj["password"],
-  database="sakila"
-)
+try:
+  mydb = mysql.connector.connect(
+    host="127.0.0.1",
+    user = credObj["user"],
+    password = credObj["password"],
+    database="sakila")
+except mysql.connector.Error as err:
+  print("Something went wrong: {}".format(err))
+  exit()
 
 mycursor = mydb.cursor(dictionary=True)
