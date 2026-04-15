@@ -1,6 +1,8 @@
 import mysql.connector
 from fastapi import FastAPI, HTTPException, Path
 from database import mydb, mycursor
+from pydantic import BaseModel
+from typing import List, Optional
 # from mysql.connector.errors import Error
 
 
@@ -8,18 +10,40 @@ app = FastAPI(
     title="Sakila Training Project"
 )
 
-@app.get("/categories/")
+class Category(BaseModel):
+    category_id: int
+    name: str
+
+class Film(BaseModel):
+    film_id: int
+    title: str
+    release_year: Optional[int] = None
+
+class Actor(BaseModel):
+    actor_id: int
+    actor_name: str
+
+class FilmDetail(BaseModel):
+    film_id: int
+    title: str
+    description: str
+    release_year: int
+    actors: List[Actor]
+
+class Availability(BaseModel):
+    AVAILABLE: int
+
+@app.get("/categories/", response_model=List[Category])
 def list_categories():
     try:
-        mycursor.execute("SELECT * FROM category")
+        mycursor.execute("SELECT category_id, name FROM category")
         categories_result = mycursor.fetchall()
         return categories_result
     except mysql.connector.Error as err:
         raise HTTPException(status_code=503, detail=str(err))
 
 
-
-@app.get("/films/")
+@app.get("/films/", response_model=List[Film])
 def list_films():
     try:
         mycursor.execute("SELECT film_id, title, release_year FROM film")
@@ -29,7 +53,7 @@ def list_films():
         raise HTTPException(status_code=503, detail=str(err))
 
 
-@app.get("/films/{film_id}")
+@app.get("/films/{film_id}", response_model=FilmDetail)
 def view_film(film_id: int = Path (description="Details of 1 film")):
     try:
         mycursor.execute("SELECT film_id, title, description, release_year FROM film WHERE film_id = %s;", (film_id,))
@@ -50,23 +74,21 @@ def view_film(film_id: int = Path (description="Details of 1 film")):
         raise HTTPException(status_code=503, detail=str(err))
 
 
-@app.get("/actors/{first_name}/{last_name}")
+@app.get("/actors/{first_name}/{last_name}", response_model=List[Film])
 def view_actors(first_name: str, last_name: str):
     try:
-        result_dictionary = dict()
         mycursor.execute("SELECT ac.actor_id, CONCAT ( ac.first_name,' ', ac.last_name) AS actor_name "
                          "from actor ac "
                          "where ac.first_name = %s and ac.last_name = %s; ", (first_name, last_name))
         actor_query = mycursor.fetchall()
         if actor_query:
-            mycursor.execute("SELECT flm.film_id, flm.title "
+            mycursor.execute("SELECT flm.film_id, flm.title, flm.release_year "
                             "from actor ac "
                             "join film_actor fac on ac.actor_id = fac.actor_id "
                             "join film flm on fac.film_id = flm.film_id "
                             "where ac.first_name = %s and ac.last_name = %s; ", (first_name, last_name))
             film_query = mycursor.fetchall()
-            result_dictionary["films"] = film_query
-            result_dictionary["actor"] = actor_query
+            result_dictionary = film_query
             return result_dictionary
         else:
             raise HTTPException(status_code=404, detail="No Such Actor In Database!")
@@ -74,7 +96,7 @@ def view_actors(first_name: str, last_name: str):
         raise HTTPException(status_code=503, detail=str(err))
 
 
-@app.get("/inventory/{film_id}")
+@app.get("/inventory/{film_id}", response_model=Availability)
 def view_availability(film_id: int):
     try:
         mycursor.execute("SELECT EXISTS (SELECT inventory_id FROM inventory WHERE film_id = %s);", (film_id,))
