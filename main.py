@@ -2,7 +2,8 @@ import mysql.connector
 from fastapi import FastAPI, HTTPException, Path
 from database import mydb, mycursor
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Literal
+
 # from mysql.connector.errors import Error
 
 
@@ -30,6 +31,8 @@ class FilmDetail(BaseModel):
     release_year: int
     actors: List[Actor]
 
+
+
 class Availability(BaseModel):
     AVAILABLE: int
 
@@ -44,14 +47,22 @@ def list_categories():
 
 
 @app.get("/films/", response_model=List[Film])
-def list_films():
+def list_films(
+        limit: int=100,
+        offset: int=0,
+        sort_by: Literal["film_id", "title", "release_year"]= "film_id",
+        order_by: Literal["asc", "desc"] = "asc"
+):
     try:
-        mycursor.execute("SELECT film_id, title, release_year FROM film")
+        query = "SELECT film_id, title, release_year FROM film"+" ORDER BY " + sort_by + " " + order_by + ";"
+
+        mycursor.execute(query)
         film_result = mycursor.fetchall()
         return film_result
+
     except mysql.connector.Error as err:
         raise HTTPException(status_code=503, detail=str(err))
-
+# TODO: Implement sorting and pagination into query
 
 @app.get("/films/{film_id}", response_model=FilmDetail)
 def view_film(film_id: int = Path (description="Details of 1 film")):
