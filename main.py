@@ -54,9 +54,7 @@ def list_films(
         order_by: Literal["asc", "desc"] = "asc"
 ):
     try:
-        query = "SELECT film_id, title, release_year FROM film"+" ORDER BY " + sort_by + " " + order_by + ";"
-
-        mycursor.execute(query)
+        mycursor.execute("SELECT film_id, title, release_year FROM film"+" ORDER BY " + sort_by + " " + order_by + " LIMIT %s OFFSET %s;", (limit, offset))
         film_result = mycursor.fetchall()
         return film_result
 
